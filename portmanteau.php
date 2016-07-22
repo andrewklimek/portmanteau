@@ -27,6 +27,32 @@ register_activation_hook( __FILE__, 'portmanteau_flush_rewrites' );
 add_action( 'init', 'portmanteau_register_custom_post_types' );
 add_action( 'add_meta_boxes_portmanteau', 'portmanteau_add_custom_box' );
 
+/***
+ * Silly shortcode for displaying custom meta
+ * for example:
+ * <ul>
+ * <li><a href="[postmeta key=website]">Website</a></li>
+ * <li><a href="[postmeta key=facebook]">Facebook</a></li>
+ * <li><a href="[postmeta key=twitter]">Twitter</a></li>
+ * <li><a href="[postmeta key=instagram]">Instagram</a></li>
+ * </ul>
+ */
+add_shortcode( 'postmeta', 'readycat_postmeta' );
+function readycat_postmeta( $a ) {
+	
+	$meta = wp_cache_get( 'readycat_postmeta' );// get meta from cache
+	
+	if ( false === $meta ) {// no cache?
+		$meta = get_post_meta( get_the_ID() );// get meta array
+		wp_cache_set( 'readycat_postmeta', $meta );// set cache
+	}
+	
+	$return = isset( $meta[$a['key']] ) ? implode( ', ', $meta[$a['key']] ) : '';
+	
+	return $return;
+	
+}
+
 
 function portmanteau_add_custom_box() {
 
@@ -39,7 +65,7 @@ function portmanteau_add_custom_box() {
 
 
 /**
- * add the meta box.  As of 4.4, we don't need to do ANYTHIGN to actually add the meta on post save.
+ * add the meta box.  As of 4.4, we don't need to do ANYTHIGN to actually write the meta on post save.
  * It is automatically by using name='meta_input[custom_meta_key]'
  * See https://github.com/WordPress/WordPress/blob/e6267dcf19f1309954e04b65a7fa8e9e2df5d0a4/wp-includes/post.php#L2825
  */
