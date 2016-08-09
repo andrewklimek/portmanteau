@@ -1,6 +1,7 @@
 <?php
 /*
 Plugin Name: Portmanteau
+Plugin URI:  https://github.com/andrewklimek/portmanteau/
 Description: Typical portfolio / project plugin
 Version:     0.1
 Author:      Andrew J Klimek
