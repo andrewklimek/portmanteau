@@ -21,7 +21,6 @@ You should have received a copy of the GNU General Public License along with
 Portmanteau. If not, see https://www.gnu.org/licenses/gpl-2.0.html.
 */
 
-if(!function_exists('poo')){function poo($v,$l=''){if(WP_DEBUG_LOG){error_log("***$l***\n".var_export($v,true));}}}
 
 register_deactivation_hook( __FILE__, 'flush_rewrite_rules' );
 register_activation_hook( __FILE__, 'portmanteau_flush_rewrites' );
@@ -173,10 +172,10 @@ function portmanteau_inner_custom_box( $post ) {
 	$values = get_post_meta( $post->ID );
 	
 	$fields = array(
-		'Website'	=>	'//hillaryraimo.com/',
-		'Facebook'	=>	'https://www.facebook.com/HillaryRaimo/',
-		'Twitter'	=>	'https://twitter.com/hillaryraimo/',
-		'Instagram'	=>	'https://www.instagram.com/hillaryraimo11/',
+		'Website'	=>	'',
+		'Facebook'	=>	'',
+		'Twitter'	=>	'',
+		'Instagram'	=>	'',
 	);
 
 	print "<table class='form-table'><tbody>";
