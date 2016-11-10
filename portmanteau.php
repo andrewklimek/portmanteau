@@ -36,8 +36,14 @@ function quickcat($atts){
 		'cat' => '',
 		'num' => '16',
 		'order' => 'DESC',
+		'body' => 1,
+		'excerpt' => 1,
+		'thumb' => 0,
+		'thumb_before' => 0,
 		'chars' => 80,
-		'type' => 'post'
+		'type' => 'post',
+		'more' => null,
+		'header' => 'h2'
 	), $atts, 'quickcat' );
 
 	$query = new WP_Query( array( 
@@ -57,31 +63,52 @@ function quickcat($atts){
 			// get_template_part( 'template-parts/content', get_post_format() );
 			?>
 <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-	<a href="<?php echo esc_url( get_permalink() ) ?>" rel="bookmark">
 	<header class="entry-header">
-		<?php the_title( '<h2 class="entry-title">', '</h2>' ); ?>
+		<a href="<?php echo esc_url( get_permalink() ) ?>" rel="bookmark">
+			<?php
+			if ( ! $atts['thumb_before'] ) {
+				the_title( '<'. $atts['header'] .' class="entry-title">', '</'. $atts['header'] .'>' );
+			}
+			if ( ( $atts['thumb'] || $atts['thumb_before'] ) && has_post_thumbnail() ) {
+				the_post_thumbnail();
+			}
+			?>
+		</a>
 	</header>
 	<div class="entry-content">
 		<?php
-			if ( has_post_thumbnail() ) {
-				the_post_thumbnail();
-			}
-			
-			if ( $excerpt = get_the_excerpt() ) {
-				if ( strlen( $excerpt ) > (int) $atts['chars'] ) {
-					$excerpt = substr( $excerpt, 0, strpos( $excerpt, ' ', (int) $atts['chars'] ) );
+			if ( $atts['body'] || $atts['thumb_before'] ) {
+				
+				print "<div class='quickcat-body'>";
+				
+				if ( $atts['thumb_before'] ) {
+					the_title( '<'. $atts['header'] .' class="entry-title"><a href="' . get_permalink() .'" rel="bookmark">', '</a></'. $atts['header'] .'>' );
 				}
-				print "<p class='quickcat-excerpt'>{$excerpt}…</p>";
+			
+				if ( $atts['body'] ) {
+					
+					if ( $atts['excerpt'] && $excerpt = get_the_excerpt() ) {
+						if ( strlen( $excerpt ) > (int) $atts['chars'] ) {
+							$excerpt = substr( $excerpt, 0, strpos( $excerpt, ' ', (int) $atts['chars'] ) );
+						}
+						print "<p class='quickcat-excerpt'>{$excerpt}…</p>";
+						print '<p class="readmore"><a href="' . get_permalink() .'" rel="bookmark">';
+						print $atts['more'] ? $atts['more'] : "Read More &rarr;";
+						print '</a></p>';
+				
+					} else {
+						the_content( $atts['more'] );
+					}
+				}
+				print "</div>";
 			}
 		?>
 	</div>
-	<span class="readmore">Read More &rarr;</span>
 </a>
 </article>
 			<?php
 		}
 		echo '</div>';
-		the_posts_navigation();
 	}
 	/* Restore original Post Data */
 	wp_reset_postdata();
@@ -97,31 +124,23 @@ function frenchpress_masonry( $a, $content = '' ) {
 	
 	if ( ! $content ) return "no content in [frenchmason] shortcode";
 	
-	$child = !empty( $a['child'] ) ? ' > :first-child' : '';
-	$selector = !empty( $a['selector'] ) ? $a['selector'] : '#frenchmason > *';
-	if ( empty( $a['width'] ) ) {
-		$width = "'{$selector}'";
-	} elseif ( is_numeric( $a['width'] ) ) {
-		$width = $a['width'];
-	} else {
-		$width = "'{$a['width']}'";
-	}
+	$selector = !empty( $a['selector'] ) ? $a['selector'] : "article";
+	$container = !empty( $a['container'] ) ? " {$a['container']}" : "";
 	
 	$snippet = "
-	var grid = document.querySelector('#frenchmason{$child}');
+	var grid = document.querySelector('.grid.js-masonry{$container}');
 	imagesLoaded( grid, function() {
 		var msnry = new Masonry( grid, {
 			itemSelector: '{$selector}',
-			columnWidth: {$width},
-			percentPosition: true,
-			// gutter: 10
+			columnWidth: '{$selector}',
+			percentPosition: true
 		});
 	});
 	";
 	wp_enqueue_script( 'masonry' );
 	wp_add_inline_script( 'masonry', $snippet );
 	
-	$out = "<div id='frenchmason' class='frenchmason'>". do_shortcode($content) ."</div>";
+	$out = "<div class='grid js-masonry'>". do_shortcode($content) ."</div>";
 	
 	return $out;
 }
