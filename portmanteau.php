@@ -27,6 +27,7 @@ register_activation_hook( __FILE__, 'portmanteau_flush_rewrites' );
 add_action( 'init', 'portmanteau_register_custom_post_types' );
 add_action( 'add_meta_boxes_project', 'portmanteau_add_custom_box' );
 
+
 /**
 * Shortcode for category listing, used for timeline
 */
@@ -38,14 +39,17 @@ function quickcat($atts){
 		'order' => 'DESC',
 		'body' => 1,
 		'excerpt' => 1,
-		'thumb' => 0,
-		'thumb_before' => 0,
+		'thumb' => 1,
+		'thumb_before' => 1,
 		'chars' => 80,
 		'type' => 'post',
 		'more' => null,
-		'header' => 'h2'
+		'more_class' => '',
+		'header' => 'h2',
+		'date' => 0,
+		'posted_on' => 'Posted on',
+		'byline' => 0
 	), $atts, 'quickcat' );
-
 	$query = new WP_Query( array( 
 		'category_name' => $atts['cat'], 
 		'posts_per_page' => $atts['num'], 
@@ -54,7 +58,6 @@ function quickcat($atts){
 	) );	
 	
 	ob_start();
-
 	// The Loop
 	if ( $query->have_posts() ) {
 		echo '<div class="quickcat">';
@@ -62,39 +65,66 @@ function quickcat($atts){
 			$query->the_post();
 			// get_template_part( 'template-parts/content', get_post_format() );
 			?>
-<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-	<header class="entry-header">
+<article <?php post_class('quickcat fff'); ?>>
+	<div class="entry-header quickcat fffi fffi-initial">
 		<a href="<?php echo esc_url( get_permalink() ) ?>" rel="bookmark">
 			<?php
 			if ( ! $atts['thumb_before'] ) {
-				the_title( '<'. $atts['header'] .' class="entry-title">', '</'. $atts['header'] .'>' );
+				the_title( '<'. $atts['header'] .' class="entry-title quickcat">', '</'. $atts['header'] .'>' );
 			}
-			if ( ( $atts['thumb'] || $atts['thumb_before'] ) && has_post_thumbnail() ) {
-				the_post_thumbnail();
+			if ( $atts['thumb'] && has_post_thumbnail() ) {
+				the_post_thumbnail( 'thumbnail' );
 			}
 			?>
 		</a>
-	</header>
-	<div class="entry-content">
+	</div>
+	<div class="entry-content quickcat fffi fffi-magic">
 		<?php
 			if ( $atts['body'] || $atts['thumb_before'] ) {
 				
 				print "<div class='quickcat-body'>";
 				
 				if ( $atts['thumb_before'] ) {
-					the_title( '<'. $atts['header'] .' class="entry-title"><a href="' . get_permalink() .'" rel="bookmark">', '</a></'. $atts['header'] .'>' );
+					the_title( '<'. $atts['header'] .' class="entry-title quickcat"><a href="' . get_permalink() .'" rel="bookmark">', '</a></'. $atts['header'] .'>' );
 				}
 			
+				// meta
+				if ( $atts['date'] || $atts['byline'] ) {
+					
+					$meta_date = $byline = '';
+					
+					if ( $atts['date'] ) {
+						$time_string = '<time class="entry-date published" datetime="%1$s">%2$s</time>';
+						$time_string = sprintf( $time_string,
+							esc_attr( get_the_date( 'c' ) ),
+							esc_html( get_the_date() )
+						);
+						$meta_date = sprintf(
+							esc_html_x( '%s %s', 'post date', 'frenchpress' ),
+							$atts['posted_on'],
+							'<span class="posted-on"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">' . $time_string . '</a></span>'
+						);
+					}
+				
+					if ( $atts['byline'] ) {
+						$byline = sprintf(
+							esc_html_x( 'by %s', 'post author', 'frenchpress' ),
+							'<span class="author vcard"><a class="url fn n" href="' . esc_url( get_author_posts_url( get_the_author_meta( 'ID' ) ) ) . '">' . esc_html( get_the_author() ) . '</a></span>'
+						);
+					}
+					print "<p class='entry-meta-header'>{$meta_date}{$byline}</p>"; // WPCS: XSS OK.
+				}
+				
 				if ( $atts['body'] ) {
 					
 					if ( $atts['excerpt'] && $excerpt = get_the_excerpt() ) {
-						if ( strlen( $excerpt ) > (int) $atts['chars'] ) {
-							$excerpt = substr( $excerpt, 0, strpos( $excerpt, ' ', (int) $atts['chars'] ) );
+						if ( ! has_excerpt() && ( strlen( $excerpt ) > (int) $atts['chars'] ) ) {
+							$excerpt = substr( $excerpt, 0, strpos( $excerpt, ' ', (int) $atts['chars'] ) ) .'…';
 						}
-						print "<p class='quickcat-excerpt'>{$excerpt}…</p>";
-						print '<p class="readmore"><a href="' . get_permalink() .'" rel="bookmark">';
+						print "<p class='quickcat-excerpt'>{$excerpt}</p>";
+						print "<a class='readmore {$atts['more_class']}' href='". get_permalink() ."' rel='bookmark'>";
 						print $atts['more'] ? $atts['more'] : "Read More &rarr;";
-						print '</a></p>';
+						print "</a>";
 				
 					} else {
 						the_content( $atts['more'] );
@@ -104,7 +134,6 @@ function quickcat($atts){
 			}
 		?>
 	</div>
-</a>
 </article>
 			<?php
 		}
@@ -112,10 +141,8 @@ function quickcat($atts){
 	}
 	/* Restore original Post Data */
 	wp_reset_postdata();
-
 	return ob_get_clean();
 }
-
 /**
 * Masonry Shortcode
 */
@@ -145,12 +172,13 @@ function frenchpress_masonry( $a, $content = '' ) {
 			percentPosition: true,
 			// gutter: 10
 		});
+		grid.style.opacity = 1;
 	});
 	";
 	wp_enqueue_script( 'masonry' );
 	wp_add_inline_script( 'masonry', $snippet );
 	
-	$out = "<div id='frenchmason-{$id}' class='frenchmason'>". do_shortcode($content) ."</div>";
+	$out = "<div id='frenchmason-{$id}' class='frenchmason' style='opacity:0;transition:opacity .2s;'>". do_shortcode($content) ."</div>";
 	
 	return $out;
 }
